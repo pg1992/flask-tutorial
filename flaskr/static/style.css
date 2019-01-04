@@ -132,3 +132,13 @@ input[type=submit] {
   align-self: start;
   min-width: 10em;
 }
+
+article h1 a {
+  text-decoration: none;
+  transition: 500ms;
+  border-bottom: 1px solid transparent;
+}
+
+article h1 a:hover {
+  border-color: #377ba8;
+}
