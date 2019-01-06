@@ -114,7 +114,7 @@ def details(id):
     return render_template('blog/details.html', post=post)
 
 
-@bp.route('/<int:id>/like')
+@bp.route('/<int:id>/like', methods=('POST',))
 @login_required
 def like_post(id):
     post = get_post(id, check_author=False)
