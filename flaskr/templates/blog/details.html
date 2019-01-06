@@ -21,4 +21,26 @@
             <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
         </form>
     {% endif %}
+
+    <hr>
+    <h1>Comments</h1>
+    {% if g.user %}
+    <form method="post">
+        <label for="comment_title">Title</label>
+        <input type="text" name="comment_title" id="comment_title" value="{{ request.form['comment_title'] }}" required>
+        <label for=comment_body">Your comments</label>
+        <textarea name="comment_body" id="comment_body">{{ request.form['comment_body'] }}</textarea>
+        <input type="submit" value="Comment">
+    </form>
+    {% endif %}
+    {% for comment in comments %}
+    <article class="post">
+        <h3>{{ comment['title'] }}</h3>
+        <div class="about">by {{ comment['username'] }} on {{ comment['created'].strftime('%Y-%m-%d %H:%M:%S') }}</div>
+        <p>{{ comment['body'] }}</p>
+    </article>
+    {% if not loop.last %}
+    <hr>
+    {% endif %}
+    {% endfor %}
 {% endblock %}

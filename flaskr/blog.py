@@ -69,6 +69,18 @@ def get_post(id, check_author=True):
     return post
 
 
+def get_comments(post_id):
+    comments = get_db().execute(
+        'SELECT pc.id, title, body, created, user_id, username'
+        ' FROM post_comment as pc JOIN user as u ON u.id = pc.user_id'
+        ' WHERE post_id = ?'
+        ' ORDER BY created DESC',
+        (post_id,)
+    ).fetchall()
+
+    return comments
+
+
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
@@ -108,10 +120,38 @@ def delete(id):
     return redirect(url_for('blog.index'))
 
 
-@bp.route('/<int:id>/details')
+@bp.route('/<int:id>/details', methods=('GET', 'POST'))
 def details(id):
     post = get_post(id, check_author=False)
-    return render_template('blog/details.html', post=post)
+    comments = get_comments(id)
+
+    if request.method == 'POST':
+        if g.user is None:
+            abort(403)
+
+        comment_title = request.form['comment_title']
+        comment_body = request.form['comment_body']
+        error = None
+
+        if comment_title is None:
+            error = 'Comment title is required.'
+
+        if comment_body is None:
+            error = 'Comment body is required.'
+
+        if error is None:
+            db = get_db()
+            db.execute(
+                'INSERT INTO post_comment (title, body, user_id, post_id)'
+                ' VALUES (?, ?, ?, ?)',
+                (comment_title, comment_body, g.user['id'], id)
+            )
+            db.commit()
+            return redirect(url_for('blog.details', id=post['id']))
+
+        flash(error)
+
+    return render_template('blog/details.html', post=post, comments=comments)
 
 
 @bp.route('/<int:id>/like', methods=('POST',))
