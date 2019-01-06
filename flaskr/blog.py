@@ -14,9 +14,15 @@ def index():
     db = get_db()
     posts = db.execute(
         'SELECT p.id, title, body, created, author_id, username'
+        '       ,(SELECT COUNT(*) FROM user_like'
+        '         WHERE post_id = p.id) as like_count'
+        '       ,? in (SELECT user_id FROM user_like'
+        '         WHERE post_id = p.id) as i_like'
         ' FROM post p JOIN user u ON p.author_id = u.id'
-        ' ORDER BY created DESC'
+        ' ORDER BY created DESC',
+        (0 if g.user is None else g.user['id'],)
     ).fetchall()
+
     return render_template('blog/index.html', posts=posts)
 
 
@@ -96,6 +102,7 @@ def update(id):
 def delete(id):
     get_post(id)
     db = get_db()
+    db.execute('PRAGMA foreign_keys = ON')
     db.execute('DELETE FROM post WHERE id = ?', (id,))
     db.commit()
     return redirect(url_for('blog.index'))
@@ -105,3 +112,28 @@ def delete(id):
 def details(id):
     post = get_post(id, check_author=False)
     return render_template('blog/details.html', post=post)
+
+
+@bp.route('/<int:id>/like')
+@login_required
+def like_post(id):
+    post = get_post(id, check_author=False)
+    db = get_db()
+    if db.execute(
+        'SELECT * FROM user_like'
+        ' WHERE post_id = ? AND user_id = ?',
+        (post['id'], g.user['id'])
+    ).fetchone() is None:
+        db.execute(
+            'INSERT INTO user_like (user_id, post_id)'
+            ' VALUES (?, ?)',
+            (g.user['id'], post['id'])
+        )
+    else:
+        db.execute(
+            'DELETE FROM user_like'
+            ' WHERE post_id = ? AND user_id = ?',
+            (post['id'], g.user['id'])
+        )
+    db.commit()
+    return redirect(url_for('blog.index'))
